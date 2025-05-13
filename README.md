@@ -78,18 +78,6 @@ Run the test suite using PHPUnit:
 php artisan test
 ```
 
-## File Upload
-
-The application includes a `FileUpload` model for handling file uploads. Ensure your form has the appropriate enctype for file uploads:
-
-```html
-<form action="/upload" method="POST" enctype="multipart/form-data">
-    @csrf
-    <input type="file" name="csv_file">
-    <button type="submit">Upload CSV</button>
-</form>
-```
-
 ## Database
 
 The project uses migrations to define the database schema. Key tables include:
@@ -97,6 +85,88 @@ The project uses migrations to define the database schema. Key tables include:
 - `products`: Stores product information imported from CSV files
 - `users`: Manages user accounts
 - `cache`: Handles application caching
+
+## Redis and Laravel Queue
+
+This project uses Redis for caching and Laravel Queue for background job processing. Here's how to set it up:
+
+### Redis Setup
+
+1. Ensure Redis is installed on your system. If not, you can install it using:
+   ```
+   sudo apt-get install redis-server
+   ```
+
+2. Start the Redis server:
+   ```
+   sudo service redis-server start
+   ```
+
+3. In your `.env` file, set the Redis connection:
+   ```
+   REDIS_HOST=127.0.0.1
+   REDIS_PASSWORD=null
+   REDIS_PORT=6379
+   ```
+
+### Laravel Queue
+
+1. Set up the queue connection in your `.env` file:
+   ```
+   QUEUE_CONNECTION=redis
+   ```
+
+2. Run the queue worker:
+   ```
+   php artisan queue:work
+   ```
+
+3. For production, it's recommended to use a process monitor like Supervisor to keep the queue worker running. Here's a basic Supervisor configuration:
+
+   ```
+   [program:laravel-worker]
+   process_name=%(program_name)s_%(process_num)02d
+   command=php /path/to/your/project/artisan queue:work --sleep=3 --tries=3 --max-time=3600
+   autostart=true
+   autorestart=true
+   user=www-data
+   numprocs=8
+   redirect_stderr=true
+   stdout_logfile=/path/to/your/project/worker.log
+   ```
+
+### Using Queues
+
+To dispatch a job to the queue, you can use the `dispatch` method:
+
+```php
+use App\Jobs\ProcessCsvUpload;
+
+ProcessCsvUpload::dispatch($fileUpload);
+```
+
+This will add the job to the queue, which will then be processed by the queue worker.
+
+### Monitoring Queues
+
+You can monitor your queues using Laravel's built-in commands:
+
+- View failed jobs:
+  ```
+  php artisan queue:failed
+  ```
+
+- Retry failed jobs:
+  ```
+  php artisan queue:retry all
+  ```
+
+- Clear failed jobs:
+  ```
+  php artisan queue:flush
+  ```
+
+For more advanced monitoring, consider using Laravel Horizon if you're using Redis as your queue driver.
 
 ## Contributing
 
@@ -115,6 +185,5 @@ This project is open-sourced software licensed under the [MIT license](https://o
 - [Laravel](https://laravel.com)
 - [Tailwind CSS](https://tailwindcss.com)
 - [Vite](https://vitejs.dev)
-```
 
 This README provides a comprehensive overview of your CSV upload project, including installation instructions, usage guidelines, and key features. It also includes sections on testing, file uploads, database structure, and contribution guidelines. Feel free to adjust any details to better match your specific project requirements or add any additional sections you think would be helpful for users and contributors.
